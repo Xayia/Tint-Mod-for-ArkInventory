@@ -1,0 +1,10 @@
+## Interface: 30300
+## Title: ArkInventory ItemLevel [Xayia]
+## Notes: Zeigt ItemLevel unten rechts auf ArkInventory-Itembuttons an
+## Author: Xayia
+## Version: 1.0.0
+## RequiredDeps: ArkInventory
+## OptionalDeps: LibSharedMedia-3.0
+## SavedVariables: ArkInventory_ItemLevel_XayiaDB
+
+ArkInventory_ItemLevel_Xayia.lua
