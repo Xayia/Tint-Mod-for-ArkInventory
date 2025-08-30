@@ -12,6 +12,7 @@ local defaults = {
 	debug = false,
 	mailShowBelow40 = false,
 	mailSubtypeLabel = nil,
+	cloakNoTint = false,
 }
 
 local function scheduleWelcome()
@@ -96,6 +97,10 @@ local function shouldTint(i)
 		end
 		if DB.mailShowBelow40 and isMail and (reqLevel or 0) < 40 then
 			if DB.debug and DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("[AITint] mail<40 (reqLevel) exception -> not tinting") end
+			return false
+		end
+		if DB.cloakNoTint and equipLoc == "INVTYPE_CLOAK" then
+			if DB.debug and DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("[AITint] cloakNoTint exception -> not tinting") end
 			return false
 		end
 		tint = DB.armor[itemSubType] and true or false
@@ -264,6 +269,17 @@ local function buildOptions()
 					end)
 					panel.AITintMailBelow40 = subCB
 					if dbTable[sub] then panel.AITintMailBelow40:Show() else panel.AITintMailBelow40:Hide() end
+				elseif sectionKey == "Armor" and sub == "Cloth" then
+					local subCB = CreateFrame("CheckButton", addonName .. "ArmorClothNoTintCloak", panel, "UICheckButtonTemplate")
+					subCB:SetPoint("LEFT", cb, "RIGHT", 24, 0)
+					_G[subCB:GetName() .. "Text"]:SetText("Don't tint Cloak")
+					subCB:SetChecked(DB.cloakNoTint or false)
+					subCB:SetScript("OnClick", function(self)
+						DB.cloakNoTint = self:GetChecked() or false
+						if ArkInventory and ArkInventory.Frame_Main_Generate then ArkInventory.Frame_Main_Generate(nil, ArkInventory.Const.Window.Draw.Refresh) end
+					end)
+					panel.AITintClothNoTintCloak = subCB
+					if dbTable[sub] then panel.AITintClothNoTintCloak:Show() else panel.AITintClothNoTintCloak:Hide() end
 				end
 				c = c + 1
 				if c % cols == 0 then
