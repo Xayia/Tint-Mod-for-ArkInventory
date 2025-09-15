@@ -1,11 +1,10 @@
 ## Interface: 30300
 ## Title: ArkInventory Tint [Xayia]
-## Notes: Tints selected Armor/Weapon subtypes in ArkInventory
+## Notes: Tints selected Armor/Weapon subtypes in ArkInventory. Now with profile support!
 ## Author: Xayia
-## Version: 1.1.0
+## Version: 1.2.0
 ## RequiredDeps: ArkInventory
 ## SavedVariables: ArkInventory_Tint_XayiaDB
 
 ArkInventory_Tint_Xayia.lua
 README.md
-
