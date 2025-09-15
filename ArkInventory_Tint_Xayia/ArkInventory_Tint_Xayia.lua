@@ -12,7 +12,6 @@ local defaults = {
 	debug = false,
 	mailShowBelow40 = false,
 	mailSubtypeLabel = nil,
-	cloakNoTint = false,
 }
 
 local function scheduleWelcome()
@@ -97,10 +96,6 @@ local function shouldTint(i)
 		end
 		if DB.mailShowBelow40 and isMail and (reqLevel or 0) < 40 then
 			if DB.debug and DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("[AITint] mail<40 (reqLevel) exception -> not tinting") end
-			return false
-		end
-		if DB.cloakNoTint and equipLoc == "INVTYPE_CLOAK" then
-			if DB.debug and DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("[AITint] cloakNoTint exception -> not tinting") end
 			return false
 		end
 		tint = DB.armor[itemSubType] and true or false
@@ -269,17 +264,6 @@ local function buildOptions()
 					end)
 					panel.AITintMailBelow40 = subCB
 					if dbTable[sub] then panel.AITintMailBelow40:Show() else panel.AITintMailBelow40:Hide() end
-				elseif sectionKey == "Armor" and sub == "Cloth" then
-					local subCB = CreateFrame("CheckButton", addonName .. "ArmorClothNoTintCloak", panel, "UICheckButtonTemplate")
-					subCB:SetPoint("LEFT", cb, "RIGHT", 24, 0)
-					_G[subCB:GetName() .. "Text"]:SetText("Don't tint Cloak")
-					subCB:SetChecked(DB.cloakNoTint or false)
-					subCB:SetScript("OnClick", function(self)
-						DB.cloakNoTint = self:GetChecked() or false
-						if ArkInventory and ArkInventory.Frame_Main_Generate then ArkInventory.Frame_Main_Generate(nil, ArkInventory.Const.Window.Draw.Refresh) end
-					end)
-					panel.AITintClothNoTintCloak = subCB
-					if dbTable[sub] then panel.AITintClothNoTintCloak:Show() else panel.AITintClothNoTintCloak:Hide() end
 				end
 				c = c + 1
 				if c % cols == 0 then
@@ -318,13 +302,55 @@ end
 
 f:SetScript("OnEvent", function(self, event, arg1)
 	if event == "ADDON_LOADED" and arg1 == addonName then
-		ArkInventory_Tint_XayiaDB = ArkInventory_Tint_XayiaDB or {}
-		DB = ArkInventory_Tint_XayiaDB
-		for k,v in pairs(defaults) do if DB[k] == nil then DB[k] = v end end
-		buildOptions()
+		-- initialize the global DB
+		ArkInventory_Tint_XayiaDB = ArkInventory_Tint_XayiaDB or { profiles = {} }
+		if not ArkInventory_Tint_XayiaDB.profiles then
+			-- migrate from old single-profile structure
+			local oldSettings = ArkInventory_Tint_XayiaDB
+			ArkInventory_Tint_XayiaDB = {
+				profiles = {
+					["default"] = oldSettings
+				}
+			}
+		end
 	elseif event == "ADDON_LOADED" and arg1 == "ArkInventory" then
 		hookOnce()
 	elseif event == "PLAYER_LOGIN" then
+		local charKey = UnitName("player") .. " - " .. GetRealmName()
+		local profileExists = ArkInventory_Tint_XayiaDB.profiles[charKey] ~= nil
+
+		if not profileExists then
+			-- create a new profile for this character, copying from 'default' if it exists
+			local sourceProfile = ArkInventory_Tint_XayiaDB.profiles["default"] or defaults
+			local newProfile = {}
+			for k, v in pairs(sourceProfile) do
+				if type(v) == "table" then
+					newProfile[k] = {}
+					for k2, v2 in pairs(v) do newProfile[k][k2] = v2 end
+				else
+					newProfile[k] = v
+				end
+			end
+			ArkInventory_Tint_XayiaDB.profiles[charKey] = newProfile
+		end
+
+		-- set the DB to the current character's profile
+		DB = ArkInventory_Tint_XayiaDB.profiles[charKey]
+
+		-- ensure all default values are present in the profile
+		for k, v in pairs(defaults) do
+			if DB[k] == nil then
+				if type(v) == "table" then
+					DB[k] = {}
+					for k2, v2 in pairs(v) do DB[k][k2] = v2 end
+				else
+					DB[k] = v
+				end
+			end
+		end
+
+		-- now that DB is set, we can build the options panel
+		buildOptions()
 		hookOnce()
 		scheduleWelcome()
 	elseif event == "PLAYER_ENTERING_WORLD" then
